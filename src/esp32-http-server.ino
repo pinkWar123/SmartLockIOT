@@ -1,119 +1,242 @@
-/* ESP32 HTTP IoT Server Example for Wokwi.com
+// /**
+//    Arduino Electronic Safe
 
-  https://wokwi.com/projects/320964045035274834
+//    Copyright (C) 2020, Uri Shaked.
+//    Released under the MIT License.
+// */
 
-  To test, you need the Wokwi IoT Gateway, as explained here:
+// #include <LiquidCrystal.h>
+// #include <Keypad.h>
+// #include <Servo.h>
+// #include "SafeState.h"
+// #include "icons.h"
 
-  https://docs.wokwi.com/guides/esp32-wifi#the-private-gateway
+// /* Locking mechanism definitions */
+// #define SERVO_PIN 6
+// #define SERVO_LOCK_POS 20
+// #define SERVO_UNLOCK_POS 90
+// Servo lockServo;
 
-  Then start the simulation, and open http://localhost:9080
-  in another browser tab.
+// /* Display */
+// LiquidCrystal lcd(12, 11, 10, 9, 8, 7);
 
-  Note that the IoT Gateway requires a Wokwi Club subscription.
-  To purchase a Wokwi Club subscription, go to https://wokwi.com/club
-*/
+// /* Keypad setup */
+// const byte KEYPAD_ROWS = 4;
+// const byte KEYPAD_COLS = 4;
+// byte rowPins[KEYPAD_ROWS] = {5, 4, 3, 2};
+// byte colPins[KEYPAD_COLS] = {A3, A2, A1, A0};
+// char keys[KEYPAD_ROWS][KEYPAD_COLS] = {
+//     {'1', '2', '3', 'A'},
+//     {'4', '5', '6', 'B'},
+//     {'7', '8', '9', 'C'},
+//     {'*', '0', '#', 'D'}};
 
-#include <WiFi.h>
-#include <WiFiClient.h>
-#include <WebServer.h>
-#include <uri/UriBraces.h>
+// Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, KEYPAD_ROWS, KEYPAD_COLS);
 
-#define WIFI_SSID "Wokwi-GUEST"
-#define WIFI_PASSWORD ""
-// Defining the WiFi channel speeds up the connection:
-#define WIFI_CHANNEL 6
+// /* SafeState stores the secret code in EEPROM */
+// SafeState safeState;
 
-WebServer server(80);
+// void lock()
+// {
+//   lockServo.write(SERVO_LOCK_POS);
+//   safeState.lock();
+// }
 
-const int LED1 = 26;
-const int LED2 = 27;
+// void unlock()
+// {
+//   lockServo.write(SERVO_UNLOCK_POS);
+// }
 
-bool led1State = false;
-bool led2State = false;
+// void showStartupMessage()
+// {
+//   lcd.setCursor(4, 0);
+//   lcd.print("Welcome!");
+//   delay(1000);
 
-void sendHtml()
-{
-  String response = R"(
-    <!DOCTYPE html><html>
-      <head>
-        <title>ESP32 Web Server Demo</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          html { font-family: sans-serif; text-align: center; }
-          body { display: inline-flex; flex-direction: column; }
-          h1 { margin-bottom: 1.2em; } 
-          h2 { margin: 0; }
-          div { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; grid-auto-flow: column; grid-gap: 1em; }
-          .btn { background-color: #5B5; border: none; color: #fff; padding: 0.5em 1em;
-                 font-size: 2em; text-decoration: none }
-          .btn.OFF { background-color: #333; }
-        </style>
-      </head>
-            
-      <body>
-        <h1>ESP32 Web Server</h1>
+//   lcd.setCursor(0, 2);
+//   String message = "ArduinoSafe v1.0";
+//   for (byte i = 0; i < message.length(); i++)
+//   {
+//     lcd.print(message[i]);
+//     delay(100);
+//   }
+//   delay(500);
+// }
 
-        <div>
-          <h2>LED 1</h2>
-          <a href="/toggle/1" class="btn LED1_TEXT">LED1_TEXT</a>
-          <h2>LED 2</h2>
-          <a href="/toggle/2" class="btn LED2_TEXT">LED2_TEXT</a>
-        </div>
-      </body>
-    </html>
-  )";
-  response.replace("LED1_TEXT", led1State ? "ON" : "OFF");
-  response.replace("LED2_TEXT", led2State ? "ON" : "OFF");
-  server.send(200, "text/html", response);
-}
+// String inputSecretCode()
+// {
+//   lcd.setCursor(5, 1);
+//   lcd.print("[____]");
+//   lcd.setCursor(6, 1);
+//   String result = "";
+//   while (result.length() < 4)
+//   {
+//     char key = keypad.getKey();
+//     if (key >= '0' && key <= '9')
+//     {
+//       lcd.print('*');
+//       result += key;
+//     }
+//   }
+//   return result;
+// }
 
-void setup(void)
-{
-  Serial.begin(115200);
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
+// void showWaitScreen(int delayMillis)
+// {
+//   lcd.setCursor(2, 1);
+//   lcd.print("[..........]");
+//   lcd.setCursor(3, 1);
+//   for (byte i = 0; i < 10; i++)
+//   {
+//     delay(delayMillis);
+//     lcd.print("=");
+//   }
+// }
 
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_CHANNEL);
-  Serial.print("Connecting to WiFi ");
-  Serial.print(WIFI_SSID);
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(100);
-    Serial.print(".");
-  }
-  Serial.println(" Connected!");
+// bool setNewCode()
+// {
+//   lcd.clear();
+//   lcd.setCursor(0, 0);
+//   lcd.print("Enter new code:");
+//   String newCode = inputSecretCode();
 
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+//   lcd.clear();
+//   lcd.setCursor(0, 0);
+//   lcd.print("Confirm new code");
+//   String confirmCode = inputSecretCode();
 
-  server.on("/", sendHtml);
+//   if (newCode.equals(confirmCode))
+//   {
+//     safeState.setCode(newCode);
+//     return true;
+//   }
+//   else
+//   {
+//     lcd.clear();
+//     lcd.setCursor(1, 0);
+//     lcd.print("Code mismatch");
+//     lcd.setCursor(0, 1);
+//     lcd.print("Safe not locked!");
+//     delay(2000);
+//     return false;
+//   }
+// }
 
-  server.on(UriBraces("/toggle/{}"), []()
-            {
-    String led = server.pathArg(0);
-    Serial.print("Toggle LED #");
-    Serial.println(led);
+// void showUnlockMessage()
+// {
+//   lcd.clear();
+//   lcd.setCursor(0, 0);
+//   lcd.write(ICON_UNLOCKED_CHAR);
+//   lcd.setCursor(4, 0);
+//   lcd.print("Unlocked!");
+//   lcd.setCursor(15, 0);
+//   lcd.write(ICON_UNLOCKED_CHAR);
+//   delay(1000);
+// }
 
-    switch (led.toInt()) {
-      case 1:
-        led1State = !led1State;
-        digitalWrite(LED1, led1State);
-        break;
-      case 2:
-        led2State = !led2State;
-        digitalWrite(LED2, led2State);
-        break;
-    }
+// void safeUnlockedLogic()
+// {
+//   lcd.clear();
 
-    sendHtml(); });
+//   lcd.setCursor(0, 0);
+//   lcd.write(ICON_UNLOCKED_CHAR);
+//   lcd.setCursor(2, 0);
+//   lcd.print(" # to lock");
+//   lcd.setCursor(15, 0);
+//   lcd.write(ICON_UNLOCKED_CHAR);
 
-  server.begin();
-  Serial.println("HTTP server started");
-}
+//   bool newCodeNeeded = true;
 
-void loop(void)
-{
-  server.handleClient();
-  delay(2);
-}
+//   if (safeState.hasCode())
+//   {
+//     lcd.setCursor(0, 1);
+//     lcd.print("  A = new code");
+//     newCodeNeeded = false;
+//   }
+
+//   auto key = keypad.getKey();
+//   while (key != 'A' && key != '#')
+//   {
+//     key = keypad.getKey();
+//   }
+
+//   bool readyToLock = true;
+//   if (key == 'A' || newCodeNeeded)
+//   {
+//     readyToLock = setNewCode();
+//   }
+
+//   if (readyToLock)
+//   {
+//     lcd.clear();
+//     lcd.setCursor(5, 0);
+//     lcd.write(ICON_UNLOCKED_CHAR);
+//     lcd.print(" ");
+//     lcd.write(ICON_RIGHT_ARROW);
+//     lcd.print(" ");
+//     lcd.write(ICON_LOCKED_CHAR);
+
+//     safeState.lock();
+//     lock();
+//     showWaitScreen(100);
+//   }
+// }
+
+// void safeLockedLogic()
+// {
+//   lcd.clear();
+//   lcd.setCursor(0, 0);
+//   lcd.write(ICON_LOCKED_CHAR);
+//   lcd.print(" Safe Locked! ");
+//   lcd.write(ICON_LOCKED_CHAR);
+
+//   String userCode = inputSecretCode();
+//   bool unlockedSuccessfully = safeState.unlock(userCode);
+//   showWaitScreen(200);
+
+//   if (unlockedSuccessfully)
+//   {
+//     showUnlockMessage();
+//     unlock();
+//   }
+//   else
+//   {
+//     lcd.clear();
+//     lcd.setCursor(0, 0);
+//     lcd.print("Access Denied!");
+//     showWaitScreen(1000);
+//   }
+// }
+
+// void setup()
+// {
+//   lcd.begin(16, 2);
+//   init_icons(lcd);
+
+//   lockServo.attach(SERVO_PIN);
+
+//   /* Make sure the physical lock is sync with the EEPROM state */
+//   Serial.begin(115200);
+//   if (safeState.locked())
+//   {
+//     lock();
+//   }
+//   else
+//   {
+//     unlock();
+//   }
+
+//   showStartupMessage();
+// }
+
+// void loop()
+// {
+//   if (safeState.locked())
+//   {
+//     safeLockedLogic();
+//   }
+//   else
+//   {
+//     safeUnlockedLogic();
+//   }
+// }
