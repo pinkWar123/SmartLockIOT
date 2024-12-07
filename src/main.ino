@@ -1,89 +1,82 @@
-#include <LiquidCrystal.h>
-#include <ESP32Servo.h>
 #include <Keypad.h>
 #include <TM1637Display.h>
 #include <math.h>
 #include <WorkScheduler.h>
+#include <LiquidCrystal_I2C.h>
+#include <Wire.h>
 #include "Timer.h"
 #include "WiFi.h"
 #include <PubSubClient.h>
 #include "MQTTClient.h"
 #include <cJSON.h>
 
+// self library
+////######################################
+#include "header/ultraSonic.h"
+#include "header/SerVo.h"
+#include "header/KeyPad.h"
+#include "header/Buzzer.h"
+////######################################
+
+
+////////////////////////////////////////////////////////// Network define
 #define ADDRESS "mqtt://emqx@127.0.0.1:1883"
 #define CLIENTID "mqttx_702058d9"
 #define TOPIC "testtopic/1"
 #define PAYLOAD "Hello World!"
 #define QOS 1
 #define TIMEOUT 10000L
-// LCD Pins
-int RS = 12;
-int E = 14;
-int D4 = 27;
-int D5 = 26;
-int D6 = 25;
-int D7 = 33;
-LiquidCrystal lcd(RS, E, D4, D5, D6, D7);
+////////////////////////////////////////////////////////////////////////
 
-// Shift Register Pins
-#define DATA_PIN 2
-#define CLOCK_PIN 0
-#define LATCH_PIN 4
+
+// define pin 
+
+//////////////////////////////////////////////////////////////
+// ultrasonic pins
+#define TRIGGER_PIN 7
+#define ECHO_PIN 6
 
 // Servo Pins
 #define SERVO_PIN 21
 #define SERVO_LOCK_POS 20
 #define SERVO_UNLOCK_POS 90
 
-#define TRIGGER_PIN 7
-#define ECHO_PIN 6
-Servo lockServo;
 
-// Keypad Config
-const byte KEYPAD_ROWS = 4;
-const byte KEYPAD_COLS = 4;
-byte rowPins[KEYPAD_ROWS] = {2, 0, 4, 16};
-byte colPins[KEYPAD_COLS] = {17, 5, 18, 19};
-char keys[KEYPAD_ROWS][KEYPAD_COLS] = {
-    {'1', '2', '3', 'A'},
-    {'4', '5', '6', 'B'},
-    {'7', '8', '9', 'C'},
-    {'*', '0', '#', 'D'}};
+// keypad pins
+byte rowPins[4] = {2, 0, 4, 16};
+byte colPins[4] = {17, 5, 18, 19};
 
-Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, KEYPAD_ROWS, KEYPAD_COLS);
-// Keypad State
-char result[5] = "";
-const char *KEY = "1234";
-static int pos = 0; // Position on the LCD and in the result array
-
+// s7-segment pins
 const int CLK = 13;
 const int DIO = 32;
 
-TM1637Display tm(CLK, DIO);
+// lcd i2c pins
+const int SDA_PIN = 33;
+const int SCL_PIN = 25;
 
-// Function to control the lock
+// buzzer pins
+const int buzzer_pin = 26;
 
-WorkScheduler *inputAsync;
-WorkScheduler *ultraSonicAsync;
+// led pin
+const int led_pin = 22;
+////////////////////////////#############
 
-uint8_t data[4];
-int currentIndex = 0;
 
-void ultrasonic()
-{
-    digitalWrite(TRIGGER_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIGGER_PIN, LOW);
 
-    // Read the result:
-    int duration = pulseIn(ECHO_PIN, HIGH);
-    Serial.print("Distance in CM: ");
-    Serial.println(duration / 58);
-    Serial.print("Distance in inches: ");
-    Serial.println(duration / 148);
-}
+// ############################
+// declare device
+UltraSonic *ultrasonic = new UltraSonic(TRIGGER_PIN, ECHO_PIN);
+SerVo *servo = new SerVo(SERVO_PIN, SERVO_LOCK_POS, SERVO_UNLOCK_POS);
+TM1637Display *tm = new TM1637Display(CLK, DIO);
+LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
+Buzzer *buzzer = new Buzzer(buzzer_pin);
+KeyPad *keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
 
-WorkScheduler *taskAsync;
+////######################################
+
+
+// Keypad State
+
 void task()
 {
     Serial.print("RUN");
@@ -102,80 +95,31 @@ const char *mqttPassword = ""; // Empty since no password is set in MQTTX
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-void lock()
-{
-    lockServo.write(SERVO_LOCK_POS);
-    cJSON *json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "isOn", "false");
-    char *json_string = cJSON_Print(json);
-    client.publish("lock", json_string, true);
-    lcd.clear();
-    lcd.print("Locked!");
-    free(json_string);
-    cJSON_Delete(json);
-}
+// void lock()
+// {
+//     lockServo.write(SERVO_LOCK_POS);
+//     cJSON *json = cJSON_CreateObject();
+//     cJSON_AddStringToObject(json, "isOn", "false");
+//     char *json_string = cJSON_Print(json);
+//     client.publish("lock", json_string, true);
+//     lcd.clear();
+//     lcd.print("Locked!");
+//     free(json_string);
+//     cJSON_Delete(json);
+// }
 
-void unlock()
-{
-    lockServo.write(SERVO_UNLOCK_POS);
-    cJSON *json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "isOn", "true");
-    char *json_string = cJSON_Print(json);
-    client.publish("lock", json_string, true);
-    lcd.clear();
-    lcd.print("Unlocked!");
-    free(json_string);
-    cJSON_Delete(json);
-}
-
-void input()
-{
-    char key = keypad.getKey(); // Custom key scan logic
-
-    if (key != '\0')
-    {
-        Serial.print("Key detected: ");
-        Serial.println(key);
-
-        if (key >= '0' && key <= '9')
-        {
-            lcd.print(key);
-            result[pos++] = key; // Store the key
-            result[pos] = '\0';  // Null-terminate the string
-            if (currentIndex < 3)
-            {
-                data[currentIndex++] = tm.encodeDigit(key - '0');
-            }
-            else
-            {
-                data[currentIndex] = tm.encodeDigit(key - '0');
-                currentIndex = 0;
-                tm.clear();
-            }
-
-            if (pos == 4) // Check if 4 digits are entered
-            {
-                if (strcmp(result, KEY) == 0)
-                {
-                    unlock();
-                }
-                else
-                {
-                    lock();
-                    lcd.clear();
-                    lcd.print("Incorrect Code");
-                }
-
-                delay(1000);
-                pos = 0;          // Reset position
-                result[0] = '\0'; // Reset result array
-                lcd.clear();
-            }
-
-            tm.setSegments(data, currentIndex, 0);
-        }
-    }
-}
+// void unlock()
+// {
+//     lockServo.write(SERVO_UNLOCK_POS);
+//     // cJSON *json = cJSON_CreateObject();
+//     // cJSON_AddStringToObject(json, "isOn", "true");
+//     // char *json_string = cJSON_Print(json);
+//     // client.publish("lock", json_string, true);
+//     // lcd.clear();
+//     // lcd.print("Unlocked!");
+//     // free(json_string);
+//     // cJSON_Delete(json);
+// }v
 
 void setup_wifi()
 {
@@ -205,6 +149,7 @@ void callback(char *topic, byte *message, unsigned int length)
 {
     Serial.print("Message arrived on topic: ");
     Serial.print(topic);
+
     Serial.print(". Message: ");
 
     for (int i = 0; i < length; i++)
@@ -233,46 +178,34 @@ void connectToMQTT()
     }
 }
 
+
 // Initialize
 void setup()
 {
-    tm.setBrightness(0x0f);
-    pinMode(TRIGGER_PIN, OUTPUT);
-    pinMode(ECHO_PIN, INPUT);
-    pinMode(22, OUTPUT);
-    for (int col = 0; col < KEYPAD_COLS; col++)
-    {
-        pinMode(DATA_PIN + col, INPUT_PULLDOWN); // Ensure columns are stable
-    }
-
-    pinMode(LATCH_PIN, OUTPUT);
-    pinMode(CLOCK_PIN, OUTPUT);
+    Wire.begin(SDA_PIN, SCL_PIN);
 
     Serial.begin(115200);
-    Serial.println("Hello, ESP32!");
 
-    lcd.begin(16, 2);
-    lcd.clear();
+    // Timer::getInstance()->initialize();
 
-    lockServo.attach(SERVO_PIN);
-    lock(); // Lock initially
+    // // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân ^_^
+    // setup_wifi();
+    // auto ip = WiFi.localIP();
 
-    Timer::getInstance()->initialize();
+    // client.setServer(mqtt_server, mqtt_port);
+    // client.setCallback(callback);
+    // xTaskCreate();
 
-    // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân ^_^
-    inputAsync = new WorkScheduler(0, input);
+    ultrasonic->Setup();
+    servo->Setup();
+    tm->setBrightness(0x0f);
+    
 
-    // print ra nhanh hơn
-    ultraSonicAsync = new WorkScheduler(200UL, ultrasonic);
-    taskAsync = new WorkScheduler(100UL, task);
-    setup_wifi();
-    auto ip = WiFi.localIP();
+    lcd->begin(16, 2);        
+    lcd->backlight();         
 
-    client.setServer(mqtt_server, mqtt_port);
-    client.setCallback(callback);
-    xTaskCreate(
 
-    );
+    lcd->setCursor(0, 0);
 }
 
 // Handle user input
@@ -281,12 +214,12 @@ void setup()
 bool isOn = false;
 void loop()
 {
-    if (!client.connected())
-    {
-        connectToMQTT();
-    }
-    client.loop();
-    input();
+    // if (!client.connected())
+    // {
+    //     connectToMQTT();
+    // }
+    // client.loop();
+    // input();
 
     // Example: Publish a message every 5 seconds
     // static unsigned long lastPublish = 0;
@@ -314,4 +247,6 @@ void loop()
     //     cJSON_Delete(json);
     //     isOn = !isOn;
     // }
+
+    keypad->Input_key();
 }
