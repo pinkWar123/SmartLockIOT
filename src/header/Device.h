@@ -4,6 +4,8 @@
 #include <ESP32Servo.h>
 #include <math.h>
 #include <LiquidCrystal_I2C.h>
+#include <SPI.h>
+#include <MFRC522.h>
 
 class Device
 {
