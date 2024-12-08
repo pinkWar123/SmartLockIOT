@@ -16,8 +16,8 @@
 #include "header/SerVo.h"
 #include "header/KeyPad.h"
 #include "header/Buzzer.h"
+#include "header/MqttPublisher.h"
 ////######################################
-
 
 ////////////////////////////////////////////////////////// Network define
 #define ADDRESS "mqtt://emqx@127.0.0.1:1883"
@@ -28,8 +28,7 @@
 #define TIMEOUT 10000L
 ////////////////////////////////////////////////////////////////////////
 
-
-// define pin 
+// define pin
 
 //////////////////////////////////////////////////////////////
 // ultrasonic pins
@@ -40,7 +39,6 @@
 #define SERVO_PIN 21
 #define SERVO_LOCK_POS 20
 #define SERVO_UNLOCK_POS 90
-
 
 // keypad pins
 byte rowPins[4] = {2, 0, 4, 16};
@@ -61,19 +59,16 @@ const int buzzer_pin = 26;
 const int led_pin = 22;
 ////////////////////////////#############
 
-
-
 // ############################
 // declare device
 UltraSonic *ultrasonic = new UltraSonic(TRIGGER_PIN, ECHO_PIN);
-SerVo *servo = new SerVo(SERVO_PIN, SERVO_LOCK_POS, SERVO_UNLOCK_POS);
+SerVo *servo = nullptr; 
 TM1637Display *tm = new TM1637Display(CLK, DIO);
 LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
 Buzzer *buzzer = new Buzzer(buzzer_pin);
-KeyPad *keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
+KeyPad *keypad = nullptr; 
 
 ////######################################
-
 
 // Keypad State
 
@@ -86,7 +81,7 @@ const char *ssid = "Wokwi-GUEST";
 const char *password = "";
 
 // MQTT broker
-const char *mqtt_server = "10.0.8.193";
+const char *mqtt_server = "172.16.1.229";
 // Use your broker address
 const int mqtt_port = 1883; // Default MQTT port
 const char *mqttUser = "nguyenhongquan_thingsboard";
@@ -178,32 +173,33 @@ void connectToMQTT()
     }
 }
 
-
 // Initialize
 void setup()
 {
     Wire.begin(SDA_PIN, SCL_PIN);
 
     Serial.begin(115200);
+    servo = new SerVo(SERVO_PIN, SERVO_LOCK_POS, SERVO_UNLOCK_POS);
+    keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
 
     // Timer::getInstance()->initialize();
 
     // // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân ^_^
-    // setup_wifi();
+    setup_wifi();
     // auto ip = WiFi.localIP();
 
-    // client.setServer(mqtt_server, mqtt_port);
-    // client.setCallback(callback);
+    client.setServer(mqtt_server, mqtt_port);
+    client.setCallback(callback);
+    connectToMQTT();
+    MqttPublisher::initialize(client);
     // xTaskCreate();
 
     ultrasonic->Setup();
     servo->Setup();
     tm->setBrightness(0x0f);
-    
 
-    lcd->begin(16, 2);        
-    lcd->backlight();         
-
+    lcd->begin(16, 2);
+    lcd->backlight();
 
     lcd->setCursor(0, 0);
 }
@@ -247,6 +243,5 @@ void loop()
     //     cJSON_Delete(json);
     //     isOn = !isOn;
     // }
-
     keypad->Input_key();
 }

@@ -13,10 +13,11 @@ private:
 public:
     // Constructor sử dụng initializer list
     SerVo(int servo_pin, int Servo_Lock_POS, int Servo_Unlock_POS)
-        : Servo_PIN(servo_pin), Servo_Lock_POS(Servo_Lock_POS), Servo_Unlock_POS(Servo_Unlock_POS)  {}
+        : Servo_PIN(servo_pin), Servo_Lock_POS(Servo_Lock_POS), Servo_Unlock_POS(Servo_Unlock_POS) {
+            Serial.println("caidit me may");
+        }
 
     void Setup() override;
-
 
     void Lock();
     void Unlock();
