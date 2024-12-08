@@ -37,7 +37,7 @@
 
 // Servo Pins
 #define SERVO_PIN 21
-#define SERVO_LOCK_POS 20
+#define SERVO_LOCK_POS 0
 #define SERVO_UNLOCK_POS 90
 
 // keypad pins
@@ -180,22 +180,22 @@ void setup()
 
     Serial.begin(115200);
     servo = new SerVo(SERVO_PIN, SERVO_LOCK_POS, SERVO_UNLOCK_POS);
-    keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
+    servo->Setup();
+    keypad = new KeyPad(rowPins, colPins, tm, lcd,servo, buzzer);
 
     // Timer::getInstance()->initialize();
 
     // // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân ^_^
-    setup_wifi();
-    // auto ip = WiFi.localIP();
+    // setup_wifi();
+    // // auto ip = WiFi.localIP();
 
-    client.setServer(mqtt_server, mqtt_port);
-    client.setCallback(callback);
-    connectToMQTT();
-    MqttPublisher::initialize(client);
+    // client.setServer(mqtt_server, mqtt_port);
+    // client.setCallback(callback);
+    // connectToMQTT();
+    // MqttPublisher::initialize(client);
     // xTaskCreate();
 
     ultrasonic->Setup();
-    servo->Setup();
     tm->setBrightness(0x0f);
 
     lcd->begin(16, 2);

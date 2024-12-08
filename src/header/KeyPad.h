@@ -25,7 +25,7 @@ private:
     int currentIndex = 0;
 
 public:
-    KeyPad(byte rowPins[], byte colPins[], TM1637Display *tm, LiquidCrystal_I2C *lcd, SerVo *&servo, Buzzer *buzzer);
+    KeyPad(byte rowPins[], byte colPins[], TM1637Display *tm, LiquidCrystal_I2C *lcd,SerVo *servo, Buzzer *buzzer);
 
     void Setup() override {};
     void Input_key();

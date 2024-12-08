@@ -1,7 +1,7 @@
 #include "header/Buzzer.h"
 
 
-void Buzzer::Sound()
+void Buzzer::Sound(int time)
 {
-    tone(Buzzer_Pin, 100, 1500);
+    tone(Buzzer_Pin, 100, time);
 }

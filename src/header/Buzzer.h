@@ -11,6 +11,6 @@ class Buzzer : public Device
         Buzzer(){}
         Buzzer(int Buzzer_Pin) : Buzzer_Pin(Buzzer_Pin){}
 
-        void Sound();
+        void Sound(int time);
         ~Buzzer(){}
 };
