@@ -6,6 +6,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <SPI.h>
 #include <MFRC522.h>
+// #include "RFID.h"
 
 class Device
 {

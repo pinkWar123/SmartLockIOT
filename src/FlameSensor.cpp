@@ -8,10 +8,24 @@ int FlameSensor::Get_Flame_intensity()
 bool FlameSensor::Is_Flame()
 {
     if(IsDigital)
-        return digitalRead(Digital_PIN) == HIGH;
+        return digitalRead(Digital_PIN) == LOW;
     
-    return Get_Flame_intensity() > 0;
+    return Get_Flame_intensity() > 700;
 }
 
 
 
+void FlameSensor::Detect_Flame()
+{
+    unsigned long currentTime = millis();
+    if(Is_Flame() && currentTime - lastCheckTime >= 2000)
+    {
+        // if(servo->get_Is_locked() == true)
+        //     servo->Unlock();
+        // delay(1000);
+        buzzer->Sound(5000);
+        lastCheckTime = currentTime;
+
+        // Send MQTT here
+    }
+}

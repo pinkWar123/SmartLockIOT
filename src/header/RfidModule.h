@@ -1,6 +1,8 @@
 #pragma once
 #include "Device.h"
 #include "SerVo.h"
+#include "KeyPad.h"
+#include "Buzzer.h"
 
 class RfidModule : public Device
 {
@@ -8,34 +10,38 @@ private:
     int Ss_PIN;
     int Rst_PIN;
 
-    LiquidCrystal_I2C *lcd = NULL;
-    SerVo *servo = NULL;
+    LiquidCrystal_I2C *lcd = nullptr;
+    SerVo *servo = nullptr;
+    KeyPad *keypad = nullptr;
 
-    MFRC522::MIFARE_Key key;
-    MFRC522 rfid;
+    MFRC522 *rfid = nullptr;
 
-    static constexpr int IpAddress[4] = {103, 97, 67, 25};
-    byte nuidPICC[4] = {0, 0, 0, 0};
+    int numberOfCard = 2;
+    byte validCards[2][4] = {
+        {0xA3, 0x8E, 0xE7, 0xF7},
+        {0xE3, 0xEC, 0x62, 0x1A}};
 
-    void printHex(byte *buffer, byte bufferSize);
-    void printDec(byte *buffer, byte bufferSize);
+    bool isCardValid(byte *uid, byte uidSize);
 
 public:
-    RfidModule() : rfid(10, 9), Ss_PIN(10), Rst_PIN(9), key(), nuidPICC{0, 0, 0, 0} {}
-
-    RfidModule(int Ss_PIN, int Rst_PIN) : rfid(Ss_PIN, Rst_PIN), Ss_PIN(Ss_PIN), Rst_PIN(Rst_PIN), key(), nuidPICC{0, 0, 0, 0} {}
-
-    void Setup_lcd(LiquidCrystal_I2C *lcd) {
-        this->lcd = lcd;
+    RfidModule(int Ss_PIN, int Rst_PIN, SerVo *servo, LiquidCrystal_I2C *lcd)
+        : Ss_PIN(Ss_PIN), Rst_PIN(Rst_PIN), servo(servo), lcd(lcd)
+    {
+        rfid = new MFRC522(Ss_PIN, Rst_PIN);
     }
 
-    void Setup_SerVo(SerVo *servo) {
-        this->servo = servo;
+    void Setup() override
+    {
+        SPI.begin(); // init SPI bus
+        rfid->PCD_Init();                               // init MFRC522
     }
 
-    void Setup() override;
+    void Setup_keypad(KeyPad *keypad)
+    {
+        this->keypad = keypad;
+    }
 
-    void ReadRFID();
+    void Detect_Card();
 
     ~RfidModule() {}
 };

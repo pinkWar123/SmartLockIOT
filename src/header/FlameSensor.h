@@ -1,27 +1,38 @@
 #pragma once
 #include "Device.h"
-
+#include "SerVo.h"
+#include "Buzzer.h"
 
 
 class FlameSensor : public Device
 {
     private: 
-        int Digital_PIN;
-        int Analog_PIN;
+        int Digital_PIN = 0 ;
+        int Analog_PIN = 0;
 
         bool IsDigital;
 
-    public:
-        FlameSensor(){}
+        SerVo *servo = nullptr;
+        Buzzer* buzzer = nullptr;
+        
+        unsigned long lastCheckTime = 0;
 
-        FlameSensor(int pin, bool IsDigital = true)
-        {
-            this->IsDigital = IsDigital;
-            IsDigital ? Digital_PIN = pin :Analog_PIN = pin;
-        }
 
         bool Is_Flame();
         int Get_Flame_intensity();
+    public:
+        FlameSensor(){}
 
-        ~FlameSensor();
+        FlameSensor(int pin, SerVo *servo, Buzzer *buzzer, bool IsDigital = true)
+        {
+            this->IsDigital = IsDigital;
+            this->servo = servo;
+            this->buzzer = buzzer;
+            IsDigital ? Digital_PIN = pin : Analog_PIN = pin;
+            pinMode(pin, INPUT);
+        }
+
+        void Detect_Flame();
+
+        ~FlameSensor() = default;
 };

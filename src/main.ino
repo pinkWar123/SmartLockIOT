@@ -9,7 +9,7 @@
 #include <PubSubClient.h>
 #include "MQTTClient.h"
 #include <cJSON.h>
-
+#include <freertos/FreeRTOS.h>
 // self library
 ////######################################
 #include "header/ultraSonic.h"
@@ -17,6 +17,9 @@
 #include "header/KeyPad.h"
 #include "header/Buzzer.h"
 #include "header/MqttPublisher.h"
+#include "header/FlameSensor.h"
+#include "header/Vibration_Sensor.h"
+#include "header/RfidModule.h"
 ////######################################
 
 ////////////////////////////////////////////////////////// Network define
@@ -31,43 +34,60 @@
 // define pin
 
 //////////////////////////////////////////////////////////////
-// ultrasonic pins
-#define TRIGGER_PIN 7
-#define ECHO_PIN 6
+// ultrasonic pins - done
+#define TRIGGER_PIN 12
+#define ECHO_PIN 3
 
-// Servo Pins
-#define SERVO_PIN 21
+// Servo Pins - done
+#define SERVO_PIN 13
 #define SERVO_LOCK_POS 0
 #define SERVO_UNLOCK_POS 90
 
-// keypad pins
-byte rowPins[4] = {2, 0, 4, 16};
-byte colPins[4] = {17, 5, 18, 19};
+// keypad pins - done
+byte colPins[4] = {27, 26, 25, 33};
+byte rowPins[4] = {32, 17, 16, 2};
 
-// s7-segment pins
-const int CLK = 13;
-const int DIO = 32;
+// s7-segment pins - done
+const int CLK = 0;
+const int DIO = 14;
 
-// lcd i2c pins
-const int SDA_PIN = 33;
-const int SCL_PIN = 25;
+// lcd i2c pins - done
+const int SDA_PIN = 21;
+const int SCL_PIN = 22;
 
-// buzzer pins
-const int buzzer_pin = 26;
+// buzzer pins - done
+#define buzzer_pin 4
 
 // led pin
-const int led_pin = 22;
+const int led_pin = 1;
+
+// flame sensor - done
+const int flame_pin = 34;
+
+// vibrant sensor
+const int vibrant_pin = 35;
+
+// RFID - done
+const int SS_PIN = 5;
+const int MOSI_PIN = 23;
+const int MISO_PIN = 19;
+const int SCK_PIN = 18;
+const int RST_PIN = 15;
+
 ////////////////////////////#############
 
 // ############################
 // declare device
-UltraSonic *ultrasonic = new UltraSonic(TRIGGER_PIN, ECHO_PIN);
-SerVo *servo = nullptr; 
+UltraSonic *ultrasonic = new UltraSonic(TRIGGER_PIN, ECHO_PIN, led_pin);
+SerVo *servo = new SerVo(SERVO_PIN, SERVO_LOCK_POS, SERVO_UNLOCK_POS);
 TM1637Display *tm = new TM1637Display(CLK, DIO);
 LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
 Buzzer *buzzer = new Buzzer(buzzer_pin);
-KeyPad *keypad = nullptr; 
+KeyPad *keypad = nullptr;
 
+FlameSensor *flamesensor = new FlameSensor(flame_pin, servo, buzzer);
+VibrationSensor *vibrationSensor = new VibrationSensor(vibrant_pin, buzzer, servo, true);
+RfidModule *rfid = new RfidModule(SS_PIN, RST_PIN, servo, nullptr);
 ////######################################
 
 // Keypad State
@@ -87,8 +107,8 @@ const int mqtt_port = 1883; // Default MQTT port
 const char *mqttUser = "nguyenhongquan_thingsboard";
 const char *mqttPassword = ""; // Empty since no password is set in MQTTX
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+// WiFiClient espClient;
+// PubSubClient client(espClient);
 
 // void lock()
 // {
@@ -154,34 +174,85 @@ void callback(char *topic, byte *message, unsigned int length)
     Serial.println();
 }
 
-void connectToMQTT()
+// void connectToMQTT()
+// {
+//     while (!client.connected())
+//     {
+//         Serial.print("Connecting to MQTT...");
+//         if (client.connect("ESP32Client", mqttUser, mqttPassword))
+//         { // Provide username/password
+//             Serial.println("Connected!");
+//             client.subscribe("your/topic"); // Replace with your topic
+//         }
+//         else
+//         {
+//             Serial.print("Failed, rc=");
+//             Serial.println(client.state());
+//             delay(5000); // Retry every 5 seconds
+//         }
+//     }
+// }
+// Initialize
+
+
+void Task_Keypad(void *pvParameters)
 {
-    while (!client.connected())
+    // Logic để xử lý bàn phím
+    while (true)
     {
-        Serial.print("Connecting to MQTT...");
-        if (client.connect("ESP32Client", mqttUser, mqttPassword))
-        { // Provide username/password
-            Serial.println("Connected!");
-            client.subscribe("your/topic"); // Replace with your topic
-        }
-        else
-        {
-            Serial.print("Failed, rc=");
-            Serial.println(client.state());
-            delay(5000); // Retry every 5 seconds
-        }
+        keypad->Input_key();
+        delay(100);  // Điều chỉnh thời gian delay nếu cần
     }
 }
 
-// Initialize
+void Task_FlameSensor(void *pvParameters)
+{
+    // Logic để xử lý cảm biến ngọn lửa
+    while (true)
+    {
+        flamesensor->Detect_Flame();
+        delay(100);  // Điều chỉnh thời gian delay nếu cần
+    }
+}
+
+void Task_VibrationSensor(void *pvParameters)
+{
+    // Logic để xử lý cảm biến rung
+    while (true)
+    {
+        vibrationSensor->Detect_Vibrant();
+        delay(100);  // Điều chỉnh thời gian delay nếu cần
+    }
+}
+
+void Task_RFID(void *pvParameters)
+{
+    // Logic để xử lý RFID
+    while (true)
+    {
+        rfid->Detect_Card();
+        delay(100);  // Điều chỉnh thời gian delay nếu cần
+    }
+}
+
+void Task_Ultrasonic(void *pvParameters)
+{
+    // Logic để xử lý cảm biến siêu âm
+    while (true)
+    {
+        ultrasonic->Detect_object();
+        delay(100);  // Điều chỉnh thời gian delay nếu cần
+    }
+}
+
+
 void setup()
 {
-    Wire.begin(SDA_PIN, SCL_PIN);
+    Serial.begin(9600);
+    Wire.begin();
+    servo->Lock();
 
-    Serial.begin(115200);
-    servo = new SerVo(SERVO_PIN, SERVO_LOCK_POS, SERVO_UNLOCK_POS);
-    servo->Setup();
-    keypad = new KeyPad(rowPins, colPins, tm, lcd,servo, buzzer);
+    keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
 
     // Timer::getInstance()->initialize();
 
@@ -196,52 +267,82 @@ void setup()
     // xTaskCreate();
 
     ultrasonic->Setup();
-    tm->setBrightness(0x0f);
+    tm->setBrightness(7, true);
 
+    pinMode(led_pin, OUTPUT);
+
+    lcd->init();
     lcd->begin(16, 2);
     lcd->backlight();
 
     lcd->setCursor(0, 0);
+    rfid->Setup();
+
+    xTaskCreate(Task_Keypad, "Task_Keypad", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_Ultrasonic, "Task_Ultrasonic", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_RFID, "Task_RFID", 2048, NULL, 1, NULL);
 }
 
-// Handle user input
-
-// Main Loop
-bool isOn = false;
+int servopos = 0;
+bool islock = true;
+int count = 0;
 void loop()
 {
-    // if (!client.connected())
-    // {
-    //     connectToMQTT();
-    // }
-    // client.loop();
-    // input();
+    // Serial.print("");
+    // // if (!client.connected())
+    // // {
+    // //     connectToMQTT();
+    // // }
+    // // client.loop();
+    // // input();
 
-    // Example: Publish a message every 5 seconds
-    // static unsigned long lastPublish = 0;
-    // if (millis() - lastPublish > 5000)
-    // {
-    //     lastPublish = millis();
-    //     cJSON *json = cJSON_CreateObject();
-    //     if (json == NULL)
-    //     {
-    //         fprintf(stderr, "Failed to create JSON object\n");
-    //         return;
-    //     }
-    //     cJSON_AddStringToObject(json, "isOn", isOn ? "true" : "false");
-    //     char *json_string = cJSON_Print(json);
-    //     if (json_string == NULL)
-    //     {
-    //         fprintf(stderr, "Failed to print JSON string\n");
-    //         cJSON_Delete(json);
-    //         return;
-    //     }
-    //     client.publish("led", json_string, true);
-    //     Serial.println("Message published");
+    // // Example: Publish a message every 5 seconds
+    // // static unsigned long lastPublish = 0;
+    // // if (millis() - lastPublish > 5000)
+    // // {
+    // //     lastPublish = millis();
+    // //     cJSON *json = cJSON_CreateObject();
+    // //     if (json == NULL)
+    // //     {
+    // //         fprintf(stderr, "Failed to create JSON object\n");
+    // //         return;
+    // //     }
+    // //     cJSON_AddStringToObject(json, "isOn", isOn ? "true" : "false");
+    // //     char *json_string = cJSON_Print(json);
+    // //     if (json_string == NULL)
+    // //     {
+    // //         fprintf(stderr, "Failed to print JSON string\n");
+    // //         cJSON_Delete(json);
+    // //         return;
+    // //     }
+    // //     client.publish("led", json_string, true);
+    // //     Serial.println("Message published");
 
-    //     free(json_string);
-    //     cJSON_Delete(json);
-    //     isOn = !isOn;
-    // }
-    keypad->Input_key();
+    // //     free(json_string);
+    // //     cJSON_Delete(json);
+    // //     isOn = !isOn;
+    // // }
+    // // buzzer->Sound(300);
+    // // delay(1000);
+    // keypad->Input_key();
+    // flamesensor->Detect_Flame();
+    // vibrationSensor->Detect_Vibrant();
+    // rfid->Detect_Card();
+    // ultrasonic->Detect_object();
+
+    // // lcd->setCursor(0, 0); // Đặt con trỏ ở dòng đầu tiên
+    // // lcd->print("Hello world"); // In chuỗi lên màn hình
+    // // delay(5000); // Chờ 5 giây để nội dung hiển thị
+    // // lcd->clear(); // Xóa màn hình
+    // // delay(1000); // Chờ 1 giây trước khi lặp lại
+
+    // // for (int minutes = 0; minutes < 60; minutes++) {
+    // //     for (int seconds = 0; seconds < 60; seconds++) {
+    // //         int time = minutes * 100 + seconds; // Định dạng MM:SS
+    // //         tm->showNumberDecEx(time, 0b01000000, true); // Hiển thị dấu ':'
+    // //         delay(1000); // Dừng 1 giây
+    // //     }
+    // // }
 }

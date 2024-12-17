@@ -28,6 +28,9 @@ void KeyPad::Input_key()
 
         if (key >= '0' && key <= '9')
         {
+            if(pos == 0)
+                lcd->clear();
+
             lcd->print(key);
             result[pos++] = key; // Store the key
             result[pos] = '\0';  // Null-terminate the string
@@ -61,6 +64,9 @@ void KeyPad::Input_key()
                     servo->Unlock();
                     //delay(400);
                     //buzzer->Sound(200);
+                    CountInvalidRegisters = 0;
+
+                    // Send MQTT request here
                 }
                 else
                 {
@@ -70,6 +76,15 @@ void KeyPad::Input_key()
                     servo->Lock();
                     //delay(400);
                     //buzzer->Sound(200);
+                    CountInvalidRegisters++;
+                    Serial.println("Number of Invalid Registers : " + CountInvalidRegisters);
+                    if(CountInvalidRegisters == 5)
+                    {
+                        buzzer->Sound(5000);
+                        delay(5500);
+                        
+                        // Send MQTT Request Here
+                    }
                 }
 
                 // MqttPublisher *client = MqttPublisher::getInstance();
@@ -85,7 +100,7 @@ void KeyPad::Input_key()
                 // cJSON_Delete(json);
 
                 // Wait 1 second
-                delay(700); 
+                delay(1000); 
                 pos = 0;          // Reset position
                 result[0] = '\0'; // Reset result array
                 lcd->clear();
@@ -94,4 +109,14 @@ void KeyPad::Input_key()
             tm->setSegments(data, currentIndex, 0);
         }
     }
+}
+
+
+void KeyPad::Reset_data()
+{
+    // tm->clear();
+    pos = 0;
+    result[0] = '\0'; 
+    lcd->clear();
+    currentIndex = 0;
 }

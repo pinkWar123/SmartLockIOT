@@ -24,10 +24,13 @@ private:
     uint8_t data[4];
     int currentIndex = 0;
 
+    int CountInvalidRegisters = 0;
+
 public:
     KeyPad(byte rowPins[], byte colPins[], TM1637Display *tm, LiquidCrystal_I2C *lcd,SerVo *servo, Buzzer *buzzer);
 
     void Setup() override {};
     void Input_key();
+    void Reset_data();
     ~KeyPad() {}
 };

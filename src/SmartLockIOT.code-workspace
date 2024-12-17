@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "SmartLock",
+			"path": "C:/Users/phamn/OneDrive/Tài liệu/PlatformIO/Projects/SmartLock"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			".fantomasignore": "ignore",
+			"string": "cpp",
+			"task.h": "c",
+			"arduino_freertos.h": "c",
+			"new": "cpp"
+		}
+	}
+}
