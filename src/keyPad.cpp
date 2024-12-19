@@ -62,8 +62,9 @@ void KeyPad::Input_key()
                     lcd->clear();
                     lcd->print("Correct Code");
                     servo->Unlock();
-                    // delay(400);
-                    // buzzer->Sound(200);
+                    delay(500);
+                    buzzer->Sound(500);
+                    delay(1000);
                     CountInvalidRegisters = 0;
 
                     // Send MQTT request here
@@ -79,8 +80,9 @@ void KeyPad::Input_key()
                     lcd->clear();
                     lcd->print("InCorrect Code");
                     servo->Lock();
-                    // delay(400);
-                    // buzzer->Sound(200);
+                    delay(500);
+                    buzzer->Sound(500);
+                    delay(1000);
                     CountInvalidRegisters++;
                     Serial.println("Number of Invalid Registers : " + CountInvalidRegisters);
                     if (CountInvalidRegisters == 5)

@@ -87,7 +87,7 @@ KeyPad *keypad = nullptr;
 
 FlameSensor *flamesensor = new FlameSensor(flame_pin, servo, buzzer);
 VibrationSensor *vibrationSensor = new VibrationSensor(vibrant_pin, buzzer, servo, true);
-RfidModule *rfid = new RfidModule(SS_PIN, RST_PIN, servo, nullptr);
+RfidModule *rfid = new RfidModule(SS_PIN, RST_PIN, servo, lcd);
 ////######################################
 
 // Keypad State
@@ -97,11 +97,12 @@ void task()
     Serial.print("RUN");
 }
 
-const char *ssid = "Wokwi-GUEST";
-const char *password = "";
+// const char *ssid = "Wokwi-GUEST";
+const char *ssid = "Buồng ngũ quá";
+const char *password = "nguyenkhanh0209";
 
 // MQTT broker
-const char *mqtt_server = "172.16.0.80";
+const char *mqtt_server = "192.168.55.144";
 // Use your broker address
 const int mqtt_port = 1883; // Default MQTT port
 const char *mqttUser = "nguyenhongquan_thingsboard";
@@ -288,7 +289,7 @@ void Task_Ultrasonic(void *pvParameters)
 void setup()
 {
     Serial.begin(9600);
-    Wire.begin();
+    Wire.begin(SDA_PIN, SCL_PIN);
     servo->Lock();
 
     keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
@@ -308,6 +309,7 @@ void setup()
 
     ultrasonic->Setup();
     tm->setBrightness(7, true);
+    tm->clear();
 
     pinMode(led_pin, OUTPUT);
     digitalWrite(led_pin, LOW);
@@ -318,17 +320,18 @@ void setup()
 
     lcd->setCursor(0, 0);
     rfid->Setup();
-
+    rfid->Setup_keypad(keypad);
+    lcd->print("hello world");
     xTaskCreate(Task_Keypad, "Task_Keypad", 2048, NULL, 1, NULL);
-    // xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 2048, NULL, 1, NULL);
-    // xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 2048, NULL, 1, NULL);
     xTaskCreate(Task_Ultrasonic, "Task_Ultrasonic", 2048, NULL, 1, NULL);
     xTaskCreate(Task_RFID, "Task_RFID", 2048, NULL, 1, NULL);
 }
 
-int servopos = 0;
-bool islock = true;
-int count = 0;
+// int servopos = 0;
+// bool islock = true;
+// int count = 0;
 void loop()
 {
     // Serial.print("");

@@ -3,37 +3,37 @@
 #include "Buzzer.h"
 #include "SerVo.h"
 
-
 class VibrationSensor : public Device
 {
-    private: 
-        int Digital_PIN;
-        int Analog_Pin;
+private:
+    int Digital_PIN;
+    int Analog_Pin;
 
+    Buzzer *buzzer = nullptr;
+    SerVo *servo = nullptr;
 
-        Buzzer * buzzer = nullptr;
-        SerVo * servo = nullptr;
+    bool lastState = false;
 
-        bool is_Digital = true;
-        
-        bool Is_Vibrant();
-        float Get_Vibrant_Intensity();
+    bool is_Digital = true;
 
-        unsigned long lastCheckTime = 0;
-        
-    public:
-        VibrationSensor(){}
+    bool Is_Vibrant();
+    float Get_Vibrant_Intensity();
 
-        VibrationSensor(int pin, Buzzer *buzzer, SerVo *servo, bool is_digital = true)
-        {
-            this->buzzer = buzzer;
-            this->servo = servo;
-            this->is_Digital = is_digital;
-            is_Digital ? Digital_PIN = pin : Analog_Pin = pin;
-            pinMode(pin, INPUT);
-        }   
+    unsigned long lastCheckTime = 0;
 
-        void Detect_Vibrant();
+public:
+    VibrationSensor() {}
 
-        ~VibrationSensor() = default;
+    VibrationSensor(int pin, Buzzer *buzzer, SerVo *servo, bool is_digital = true)
+    {
+        this->buzzer = buzzer;
+        this->servo = servo;
+        this->is_Digital = is_digital;
+        is_Digital ? Digital_PIN = pin : Analog_Pin = pin;
+        pinMode(pin, INPUT);
+    }
+
+    void Detect_Vibrant();
+
+    ~VibrationSensor() = default;
 };
