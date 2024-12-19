@@ -7,8 +7,8 @@ char key_num[4][4] = {
     {'4', '5', '6', 'B'},
     {'7', '8', '9', 'C'},
     {'*', '0', '#', 'D'}};
-KeyPad::KeyPad(byte rowPins[], byte colPins[], TM1637Display *tm, LiquidCrystal_I2C *lcd,SerVo *servo, Buzzer *buzzer)
-    : keypad(makeKeymap(key_num), rowPins, colPins, 4, 4), tm(tm), lcd(lcd),servo(servo), buzzer(buzzer)
+KeyPad::KeyPad(byte rowPins[], byte colPins[], TM1637Display *tm, LiquidCrystal_I2C *lcd, SerVo *servo, Buzzer *buzzer)
+    : keypad(makeKeymap(key_num), rowPins, colPins, 4, 4), tm(tm), lcd(lcd), servo(servo), buzzer(buzzer)
 {
     for (int i = 0; i < 4; i++)
     {
@@ -28,7 +28,7 @@ void KeyPad::Input_key()
 
         if (key >= '0' && key <= '9')
         {
-            if(pos == 0)
+            if (pos == 0)
                 lcd->clear();
 
             lcd->print(key);
@@ -60,29 +60,34 @@ void KeyPad::Input_key()
                 {
                     // cJSON_AddStringToObject(json, "isOn", "false");
                     lcd->clear();
-                    lcd->print("Correct Code");  
+                    lcd->print("Correct Code");
                     servo->Unlock();
-                    //delay(400);
-                    //buzzer->Sound(200);
+                    // delay(400);
+                    // buzzer->Sound(200);
                     CountInvalidRegisters = 0;
 
                     // Send MQTT request here
+                    // cJSON *json = cJSON_CreateObject();
+                    // cJSON_AddStringToObject(json, "isLocked", "0");
+                    // char *json_string = cJSON_Print(json);
+                    // MqttPublisher *client = MqttPublisher::getInstance();
+                    // client->publishMessage("lock", json_string);
                 }
                 else
                 {
                     // cJSON_AddStringToObject(json, "isOn", "true");
                     lcd->clear();
-                    lcd->print("InCorrect Code"); 
+                    lcd->print("InCorrect Code");
                     servo->Lock();
-                    //delay(400);
-                    //buzzer->Sound(200);
+                    // delay(400);
+                    // buzzer->Sound(200);
                     CountInvalidRegisters++;
                     Serial.println("Number of Invalid Registers : " + CountInvalidRegisters);
-                    if(CountInvalidRegisters == 5)
+                    if (CountInvalidRegisters == 5)
                     {
                         buzzer->Sound(5000);
                         delay(5500);
-                        
+
                         // Send MQTT Request Here
                     }
                 }
@@ -100,7 +105,7 @@ void KeyPad::Input_key()
                 // cJSON_Delete(json);
 
                 // Wait 1 second
-                delay(1000); 
+                delay(1000);
                 pos = 0;          // Reset position
                 result[0] = '\0'; // Reset result array
                 lcd->clear();
@@ -111,12 +116,11 @@ void KeyPad::Input_key()
     }
 }
 
-
 void KeyPad::Reset_data()
 {
     // tm->clear();
     pos = 0;
-    result[0] = '\0'; 
+    result[0] = '\0';
     lcd->clear();
     currentIndex = 0;
 }

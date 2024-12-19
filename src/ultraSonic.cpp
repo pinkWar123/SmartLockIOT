@@ -1,28 +1,39 @@
 #include "header/ultraSonic.h"
+#include "header/MqttPublisher.h"
 
-void UltraSonic::Setup(){
+#include <cJSON.h>
+void UltraSonic::Setup()
+{
     pinMode(Trigger_PIN, OUTPUT);
     pinMode(Echo_PIN, INPUT);
 }
 void UltraSonic::Detect_object()
 {
     float distance = GetDistance_cm();
-    if(distance == 0)
+    if (distance == 0)
         return;
-    if(distance <= 40)
+    if (distance <= 40)
     {
-        if(Ison)
+        if (Ison)
             return;
         Ison = true;
         digitalWrite(Led_Pin, HIGH);
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "isOn", "1");
+        char *json_string = cJSON_Print(json);
+        MqttPublisher::getInstance()->publishMessage("led", json_string);
     }
     else
     {
-        if(!Ison)
+        if (!Ison)
             return;
-        
+
         Ison = false;
         digitalWrite(Led_Pin, LOW);
+        cJSON *json = cJSON_CreateObject();
+        cJSON_AddStringToObject(json, "isOn", "0");
+        char *json_string = cJSON_Print(json);
+        MqttPublisher::getInstance()->publishMessage("led", json_string);
     }
 }
 float UltraSonic::GetDistance_cm()

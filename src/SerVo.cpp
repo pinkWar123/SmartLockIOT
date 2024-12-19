@@ -1,5 +1,7 @@
 #include "header/SerVo.h"
+#include "header/MqttPublisher.h"
 
+#include <cJSON.h>
 void SerVo::Lock()
 {
     if (is_locked == true)
@@ -13,6 +15,11 @@ void SerVo::Lock()
         Serial.println(servopos);
     }
     is_locked = true;
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "isLocked", "1");
+    char *json_string = cJSON_Print(json);
+    MqttPublisher *client = MqttPublisher::getInstance();
+    client->publishMessage("lock", json_string);
 }
 void SerVo::Unlock()
 {
@@ -27,6 +34,11 @@ void SerVo::Unlock()
         Serial.println(servopos);
     }
     is_locked = false;
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "isLocked", "0");
+    char *json_string = cJSON_Print(json);
+    MqttPublisher *client = MqttPublisher::getInstance();
+    client->publishMessage("lock", json_string);
 }
 void SerVo::Setup()
 {

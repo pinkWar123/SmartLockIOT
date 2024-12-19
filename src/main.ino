@@ -101,14 +101,14 @@ const char *ssid = "Wokwi-GUEST";
 const char *password = "";
 
 // MQTT broker
-const char *mqtt_server = "172.16.1.229";
+const char *mqtt_server = "172.16.0.80";
 // Use your broker address
 const int mqtt_port = 1883; // Default MQTT port
 const char *mqttUser = "nguyenhongquan_thingsboard";
 const char *mqttPassword = ""; // Empty since no password is set in MQTTX
 
-// WiFiClient espClient;
-// PubSubClient client(espClient);
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 // void lock()
 // {
@@ -165,6 +165,47 @@ void callback(char *topic, byte *message, unsigned int length)
     Serial.print("Message arrived on topic: ");
     Serial.print(topic);
 
+    if (strcmp(topic, "lock") == 0)
+    {
+        Serial.println("Processing lock state...");
+
+        // Convert the message payload to a string
+        String payload = "";
+        for (int i = 0; i < length; i++)
+        {
+            payload += (char)message[i];
+        }
+
+        Serial.print("Payload: ");
+        Serial.println(payload);
+
+        // Parse JSON payload
+        StaticJsonDocument<200> doc; // Adjust size as needed
+        DeserializationError error = deserializeJson(doc, payload);
+
+        if (error)
+        {
+            Serial.print("JSON Parsing failed: ");
+            Serial.println(error.c_str());
+            return;
+        }
+        const char *isLocked = doc["isLocked"];
+
+        // Extract "isLocked" value
+        if (strcmp(isLocked, "1") == 0)
+        {
+            servo->Lock(); // Call Lock() when isLocked is "1"
+        }
+        else if (strcmp(isLocked, "0") == 0)
+        {
+            servo->Unlock(); // Call Unlock() when isLocked is "0"
+        }
+        else
+        {
+            Serial.println("Invalid value for isLocked. Ignoring...");
+        }
+    }
+
     Serial.print(". Message: ");
 
     for (int i = 0; i < length; i++)
@@ -174,26 +215,25 @@ void callback(char *topic, byte *message, unsigned int length)
     Serial.println();
 }
 
-// void connectToMQTT()
-// {
-//     while (!client.connected())
-//     {
-//         Serial.print("Connecting to MQTT...");
-//         if (client.connect("ESP32Client", mqttUser, mqttPassword))
-//         { // Provide username/password
-//             Serial.println("Connected!");
-//             client.subscribe("your/topic"); // Replace with your topic
-//         }
-//         else
-//         {
-//             Serial.print("Failed, rc=");
-//             Serial.println(client.state());
-//             delay(5000); // Retry every 5 seconds
-//         }
-//     }
-// }
+void connectToMQTT()
+{
+    while (!client.connected())
+    {
+        Serial.print("Connecting to MQTT...");
+        if (client.connect("ESP32Client", mqttUser, mqttPassword))
+        { // Provide username/password
+            Serial.println("Connected!");
+            client.subscribe("your/topic"); // Replace with your topic
+        }
+        else
+        {
+            Serial.print("Failed, rc=");
+            Serial.println(client.state());
+            delay(5000); // Retry every 5 seconds
+        }
+    }
+}
 // Initialize
-
 
 void Task_Keypad(void *pvParameters)
 {
@@ -201,7 +241,7 @@ void Task_Keypad(void *pvParameters)
     while (true)
     {
         keypad->Input_key();
-        delay(100);  // Điều chỉnh thời gian delay nếu cần
+        delay(100); // Điều chỉnh thời gian delay nếu cần
     }
 }
 
@@ -211,7 +251,7 @@ void Task_FlameSensor(void *pvParameters)
     while (true)
     {
         flamesensor->Detect_Flame();
-        delay(100);  // Điều chỉnh thời gian delay nếu cần
+        delay(100); // Điều chỉnh thời gian delay nếu cần
     }
 }
 
@@ -221,7 +261,7 @@ void Task_VibrationSensor(void *pvParameters)
     while (true)
     {
         vibrationSensor->Detect_Vibrant();
-        delay(100);  // Điều chỉnh thời gian delay nếu cần
+        delay(100); // Điều chỉnh thời gian delay nếu cần
     }
 }
 
@@ -231,7 +271,7 @@ void Task_RFID(void *pvParameters)
     while (true)
     {
         rfid->Detect_Card();
-        delay(100);  // Điều chỉnh thời gian delay nếu cần
+        delay(100); // Điều chỉnh thời gian delay nếu cần
     }
 }
 
@@ -241,10 +281,9 @@ void Task_Ultrasonic(void *pvParameters)
     while (true)
     {
         ultrasonic->Detect_object();
-        delay(100);  // Điều chỉnh thời gian delay nếu cần
+        delay(100); // Điều chỉnh thời gian delay nếu cần
     }
 }
-
 
 void setup()
 {
@@ -257,19 +296,21 @@ void setup()
     // Timer::getInstance()->initialize();
 
     // // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân ^_^
-    // setup_wifi();
+    setup_wifi();
     // // auto ip = WiFi.localIP();
 
-    // client.setServer(mqtt_server, mqtt_port);
-    // client.setCallback(callback);
-    // connectToMQTT();
-    // MqttPublisher::initialize(client);
+    client.setServer(mqtt_server, mqtt_port);
+    client.setCallback(callback);
+    connectToMQTT();
+    MqttPublisher::initialize(client);
+    MqttPublisher::getInstance()->subscribeToTopic("lock");
     // xTaskCreate();
 
     ultrasonic->Setup();
     tm->setBrightness(7, true);
 
     pinMode(led_pin, OUTPUT);
+    digitalWrite(led_pin, LOW);
 
     lcd->init();
     lcd->begin(16, 2);
@@ -279,8 +320,8 @@ void setup()
     rfid->Setup();
 
     xTaskCreate(Task_Keypad, "Task_Keypad", 2048, NULL, 1, NULL);
-    xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 2048, NULL, 1, NULL);
-    xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 2048, NULL, 1, NULL);
+    // xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 2048, NULL, 1, NULL);
+    // xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 2048, NULL, 1, NULL);
     xTaskCreate(Task_Ultrasonic, "Task_Ultrasonic", 2048, NULL, 1, NULL);
     xTaskCreate(Task_RFID, "Task_RFID", 2048, NULL, 1, NULL);
 }
@@ -291,11 +332,11 @@ int count = 0;
 void loop()
 {
     // Serial.print("");
-    // // if (!client.connected())
-    // // {
-    // //     connectToMQTT();
-    // // }
-    // // client.loop();
+    if (!client.connected())
+    {
+        connectToMQTT();
+    }
+    client.loop();
     // // input();
 
     // // Example: Publish a message every 5 seconds
