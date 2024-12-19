@@ -16,9 +16,9 @@ private:
 
     MFRC522 *rfid = nullptr;
 
-    int numberOfCard = 2;
-    byte validCards[2][4] = {
-        {0xA3, 0x8E, 0xE7, 0xF7},
+    int numberOfCard = 1;
+    byte validCards[1][4] = {
+        //{0xA3, 0x8E, 0xE7, 0xF7},
         {0xE3, 0xEC, 0x62, 0x1A}};
 
     bool isCardValid(byte *uid, byte uidSize);

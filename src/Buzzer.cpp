@@ -3,7 +3,7 @@
 
 void Buzzer::Sound(int time)
 {
-    tone(Buzzer_Pin, 1000);
+    digitalWrite(Buzzer_Pin, HIGH);
     delay(time + 100);
-    noTone(Buzzer_Pin);
+    digitalWrite(Buzzer_Pin, LOW);
 }

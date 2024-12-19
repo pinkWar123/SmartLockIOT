@@ -15,13 +15,19 @@ void RfidModule::Detect_Card()
         if (isCardValid(rfid->uid.uidByte, rfid->uid.size))
         {
             Serial.println("valid card");
+            
+            servo->Unlock();
+            delay(1000);
+
+
             lcd->clear();
             lcd->setCursor(0,0);
             lcd->printf("Valid card");
             lcd->setCursor(0,7);
             lcd->printf("Welcome");
-            servo->Unlock();
 
+            delay(3500);
+            lcd->clear();
             // send MQTT here
         }
         else
@@ -34,6 +40,7 @@ void RfidModule::Detect_Card()
 
         rfid->PICC_HaltA();      // Dừng giao tiếp với thẻ hiện tại
         rfid->PCD_StopCrypto1(); // Ngừng mã hóa
+        return;
     }
 
     if (!rfid->PICC_IsNewCardPresent())

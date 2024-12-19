@@ -20,10 +20,11 @@ void FlameSensor::Detect_Flame()
     unsigned long currentTime = millis();
     if(Is_Flame() && currentTime - lastCheckTime >= 2000)
     {
-        // if(servo->get_Is_locked() == true)
-        //     servo->Unlock();
-        // delay(1000);
+        if(servo->get_Is_locked() == true)
+            servo->Unlock();
+        delay(1000);
         buzzer->Sound(5000);
+        delay(1000);
         lastCheckTime = currentTime;
 
         // Send MQTT here
