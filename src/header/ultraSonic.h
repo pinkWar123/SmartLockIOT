@@ -7,10 +7,13 @@ private:
     int Trigger_PIN;
     int Echo_PIN;
     bool Ison = false;
+    bool lastState = false;
+    unsigned int lastCheckTime = 0;
 
     int Led_Pin;
 
     float GetDistance_cm();
+
 public:
     // Constructor sử dụng initializer list
     UltraSonic(int trig_pin, int echo_pin, int led_pin)

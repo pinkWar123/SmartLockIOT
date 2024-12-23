@@ -12,6 +12,7 @@ private:
 
     LiquidCrystal_I2C *lcd = nullptr;
     SerVo *servo = nullptr;
+    Buzzer *buzzer = nullptr;
     KeyPad *keypad = nullptr;
 
     MFRC522 *rfid = nullptr;
@@ -24,16 +25,16 @@ private:
     bool isCardValid(byte *uid, byte uidSize);
 
 public:
-    RfidModule(int Ss_PIN, int Rst_PIN, SerVo *servo, LiquidCrystal_I2C *lcd)
-        : Ss_PIN(Ss_PIN), Rst_PIN(Rst_PIN), servo(servo), lcd(lcd)
+    RfidModule(int Ss_PIN, int Rst_PIN, SerVo *servo, Buzzer *buzzer, LiquidCrystal_I2C *lcd)
+        : Ss_PIN(Ss_PIN), Rst_PIN(Rst_PIN), buzzer(buzzer), servo(servo), lcd(lcd)
     {
         rfid = new MFRC522(Ss_PIN, Rst_PIN);
     }
 
     void Setup() override
     {
-        SPI.begin(); // init SPI bus
-        rfid->PCD_Init();                               // init MFRC522
+        SPI.begin();      // init SPI bus
+        rfid->PCD_Init(); // init MFRC522
     }
 
     void Setup_keypad(KeyPad *keypad)
