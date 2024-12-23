@@ -102,7 +102,7 @@ const char *ssid = "Buồng ngũ quá";
 const char *password = "nguyenkhanh0209";
 
 // MQTT broker
-const char *mqtt_server = "192.168.55.144";
+const char *mqtt_server = "172.16.0.80";
 // Use your broker address
 const int mqtt_port = 1883; // Default MQTT port
 const char *mqttUser = "nguyenhongquan_thingsboard";
