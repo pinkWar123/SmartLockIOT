@@ -16,7 +16,13 @@
     "string_view": "cpp",
     "memory": "cpp",
     "random": "cpp",
-    "initializer_list": "cpp"
+    "initializer_list": "cpp",
+    "format": "cpp",
+    "utility": "cpp",
+    "xhash": "cpp",
+    "xstring": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp"
   },
   "C_Cpp_Runner.msvcBatchPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvarsall.bat",
   "C_Cpp_Runner.cCompilerPath": "gcc",
@@ -57,7 +63,10 @@
   "C_Cpp_Runner.compilerArgs": [],
   "C_Cpp_Runner.linkerArgs": [],
   "C_Cpp_Runner.includePaths": [],
-  "C_Cpp_Runner.includeSearch": ["*", "**/*"],
+  "C_Cpp_Runner.includeSearch": [
+    "*",
+    "**/*"
+  ],
   "C_Cpp_Runner.excludeSearch": [
     "**/build",
     "**/build/**",

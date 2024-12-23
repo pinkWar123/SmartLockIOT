@@ -26,7 +26,7 @@ void FlameSensor::Detect_Flame()
         MqttPublisher *client = MqttPublisher::getInstance();
         client->publishMessage("flame", json_string);
         if (servo->get_Is_locked() == true)
-            servo->Unlock();
+            servo->Unlock(true);
         delay(1000);
         buzzer->Sound(5000);
         delay(1000);

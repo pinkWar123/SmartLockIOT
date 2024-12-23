@@ -23,6 +23,8 @@ void KeyPad::Input_key()
 
     if (key != '\0')
     {
+        buzzer->Sound(100);
+        delay(100);
         Serial.print("Key detected: ");
         Serial.println(key);
 
@@ -47,39 +49,24 @@ void KeyPad::Input_key()
 
             if (pos == 4) // Check if 4 digits are entered
             {
-                // cJSON *json = cJSON_CreateObject();
-                // if (json == NULL)
-                // {
-                //     fprintf(stderr, "Failed to create JSON object\n");
-                //     return;
-                // }
 
                 Serial.println(result);
 
                 if (strcmp(result, KEY) == 0)
                 {
-                    // cJSON_AddStringToObject(json, "isOn", "false");
                     lcd->clear();
                     lcd->print("Correct Code");
-                    servo->Unlock();
+                    servo->Unlock(true);
                     delay(500);
                     buzzer->Sound(500);
                     delay(1000);
                     CountInvalidRegisters = 0;
-
-                    // Send MQTT request here
-                    // cJSON *json = cJSON_CreateObject();
-                    // cJSON_AddStringToObject(json, "isLocked", "0");
-                    // char *json_string = cJSON_Print(json);
-                    // MqttPublisher *client = MqttPublisher::getInstance();
-                    // client->publishMessage("lock", json_string);
                 }
                 else
                 {
-                    // cJSON_AddStringToObject(json, "isOn", "true");
                     lcd->clear();
                     lcd->print("InCorrect Code");
-                    servo->Lock();
+                    servo->Lock(true);
                     delay(500);
                     buzzer->Sound(500);
                     delay(1000);
@@ -89,23 +76,8 @@ void KeyPad::Input_key()
                     {
                         buzzer->Sound(5000);
                         delay(5500);
-
-                        // Send MQTT Request Here
                     }
                 }
-
-                // MqttPublisher *client = MqttPublisher::getInstance();
-                // char *json_string = cJSON_Print(json);
-                // if (json_string == NULL)
-                // {
-                //     fprintf(stderr, "Failed to print JSON string\n");
-                //     cJSON_Delete(json);
-                //     return;
-                // }
-
-                // client->publishMessage("lock", json_string);
-                // cJSON_Delete(json);
-
                 // Wait 1 second
                 delay(1000);
                 pos = 0;          // Reset position
@@ -114,6 +86,21 @@ void KeyPad::Input_key()
             }
 
             tm->setSegments(data, currentIndex, 0);
+        }
+        else if (key == '*')
+        {
+            if (pos > 0)
+            {
+                result[pos] = '\0';
+                pos--;
+                tm->setSegments(data, currentIndex - 1, 0);
+            }
+        }
+        else if (key == '#')
+        {
+            pos = 0;
+            result[pos] = '\0';
+            tm->setSegments(data, currentIndex--, 0);
         }
     }
 }

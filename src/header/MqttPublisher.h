@@ -21,6 +21,7 @@ public:
 
     // Publish message to the MQTT broker
     void publishMessage(char *topic, char *json_string);
+    void publishMessage(char *topic, char *json_string, bool retained);
 
     // Subscribe to an MQTT topic
     void subscribeToTopic(const String &subTopic);

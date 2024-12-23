@@ -87,7 +87,7 @@ KeyPad *keypad = nullptr;
 
 FlameSensor *flamesensor = new FlameSensor(flame_pin, servo, buzzer);
 VibrationSensor *vibrationSensor = new VibrationSensor(vibrant_pin, buzzer, servo, true);
-RfidModule *rfid = new RfidModule(SS_PIN, RST_PIN, servo, lcd);
+RfidModule *rfid = new RfidModule(SS_PIN, RST_PIN, servo, buzzer, lcd);
 ////######################################
 
 // Keypad State
@@ -110,32 +110,6 @@ const char *mqttPassword = ""; // Empty since no password is set in MQTTX
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-// void lock()
-// {
-//     lockServo.write(SERVO_LOCK_POS);
-//     cJSON *json = cJSON_CreateObject();
-//     cJSON_AddStringToObject(json, "isOn", "false");
-//     char *json_string = cJSON_Print(json);
-//     client.publish("lock", json_string, true);
-//     lcd.clear();
-//     lcd.print("Locked!");
-//     free(json_string);
-//     cJSON_Delete(json);
-// }
-
-// void unlock()
-// {
-//     lockServo.write(SERVO_UNLOCK_POS);
-//     // cJSON *json = cJSON_CreateObject();
-//     // cJSON_AddStringToObject(json, "isOn", "true");
-//     // char *json_string = cJSON_Print(json);
-//     // client.publish("lock", json_string, true);
-//     // lcd.clear();
-//     // lcd.print("Unlocked!");
-//     // free(json_string);
-//     // cJSON_Delete(json);
-// }v
 
 void setup_wifi()
 {
@@ -195,11 +169,11 @@ void callback(char *topic, byte *message, unsigned int length)
         // Extract "isLocked" value
         if (strcmp(isLocked, "1") == 0)
         {
-            servo->Lock(); // Call Lock() when isLocked is "1"
+            servo->Lock(false); // Call Lock() when isLocked is "1"
         }
         else if (strcmp(isLocked, "0") == 0)
         {
-            servo->Unlock(); // Call Unlock() when isLocked is "0"
+            servo->Unlock(false); // Call Unlock() when isLocked is "0"
         }
         else
         {
@@ -290,7 +264,7 @@ void setup()
 {
     Serial.begin(9600);
     Wire.begin(SDA_PIN, SCL_PIN);
-    servo->Lock();
+    servo->Lock(false);
 
     keypad = new KeyPad(rowPins, colPins, tm, lcd, servo, buzzer);
 

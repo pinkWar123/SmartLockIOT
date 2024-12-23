@@ -28,7 +28,7 @@ void VibrationSensor::Detect_Vibrant()
         char *json_string = cJSON_Print(json);
         MqttPublisher *client = MqttPublisher::getInstance();
         client->publishMessage("vibration", json_string);
-        buzzer->Sound(10000);
+        buzzer->Sound(3000);
         lastCheckTime = currentTime;
 
         // send MQTT here

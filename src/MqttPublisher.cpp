@@ -21,7 +21,22 @@ MqttPublisher *MqttPublisher::getInstance()
 void MqttPublisher::publishMessage(char *topic, char *json_string)
 {
     // Publish the message
-    if (client.publish(topic, json_string, true))
+    if (client.publish(topic, json_string))
+    {
+        Serial.println("Message published");
+    }
+    else
+    {
+        Serial.println("Failed to publish message");
+    }
+    // Clean up
+    free(json_string);
+}
+
+void MqttPublisher::publishMessage(char *topic, char *json_string, bool retained)
+{
+    // Publish the message
+    if (client.publish(topic, json_string, retained))
     {
         Serial.println("Message published");
     }
