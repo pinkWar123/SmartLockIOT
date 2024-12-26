@@ -87,21 +87,21 @@ void KeyPad::Input_key()
 
             tm->setSegments(data, currentIndex, 0);
         }
-        else if (key == '*')
-        {
-            if (pos > 0)
-            {
-                result[pos] = '\0';
-                pos--;
-                tm->setSegments(data, currentIndex - 1, 0);
-            }
-        }
-        else if (key == '#')
-        {
-            pos = 0;
-            result[pos] = '\0';
-            tm->setSegments(data, currentIndex--, 0);
-        }
+        // else if (key == '*')
+        // {
+        //     if (pos > 0)
+        //     {
+        //         result[pos] = '\0';
+        //         pos--;
+        //         tm->setSegments(data, currentIndex - 1, 0);
+        //     }
+        // }
+        // else if (key == '#')
+        // {
+        //     pos = 0;
+        //     result[pos] = '\0';
+        //     tm->setSegments(data, currentIndex--, 0);
+        // }
     }
 }
 

@@ -2,7 +2,8 @@
 #include "Device.h"
 #include "Buzzer.h"
 #include "SerVo.h"
-
+#include "Pushsafer.h"
+#include "WiFi.h"
 class VibrationSensor : public Device
 {
 private:

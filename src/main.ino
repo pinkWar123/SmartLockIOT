@@ -20,6 +20,7 @@
 #include "header/FlameSensor.h"
 #include "header/Vibration_Sensor.h"
 #include "header/RfidModule.h"
+#include "header/Pushsafer.h"
 ////######################################
 
 ////////////////////////////////////////////////////////// Network define
@@ -29,6 +30,7 @@
 #define PAYLOAD "Hello World!"
 #define QOS 1
 #define TIMEOUT 10000L
+#define PUSHSAFERKEY "lI8JrdMRXeObvw4W6gl3"
 ////////////////////////////////////////////////////////////////////////
 
 // define pin
@@ -76,6 +78,9 @@ const int RST_PIN = 15;
 
 ////////////////////////////#############
 
+WiFiClient espClient;
+PubSubClient client(espClient);
+Pushsafer *pushsafer = nullptr;
 // ############################
 // declare device
 UltraSonic *ultrasonic = new UltraSonic(TRIGGER_PIN, ECHO_PIN, led_pin);
@@ -85,7 +90,7 @@ LiquidCrystal_I2C *lcd = new LiquidCrystal_I2C(0x27, 16, 2);
 Buzzer *buzzer = new Buzzer(buzzer_pin);
 KeyPad *keypad = nullptr;
 
-FlameSensor *flamesensor = new FlameSensor(flame_pin, servo, buzzer);
+FlameSensor *flamesensor = new FlameSensor(flame_pin, servo, buzzer, pushsafer);
 VibrationSensor *vibrationSensor = new VibrationSensor(vibrant_pin, buzzer, servo, true);
 RfidModule *rfid = new RfidModule(SS_PIN, RST_PIN, servo, buzzer, lcd);
 ////######################################
@@ -102,14 +107,13 @@ const char *ssid = "Buồng ngũ quá";
 const char *password = "nguyenkhanh0209";
 
 // MQTT broker
-const char *mqtt_server = "172.16.0.80";
+const char *mqtt_server = "192.168.48.144";
 // Use your broker address
 const int mqtt_port = 1883; // Default MQTT port
 const char *mqttUser = "nguyenhongquan_thingsboard";
 const char *mqttPassword = ""; // Empty since no password is set in MQTTX
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+
 
 void setup_wifi()
 {
@@ -270,7 +274,7 @@ void setup()
 
     // Timer::getInstance()->initialize();
 
-    // // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân ^_^
+    // // Khởi tạo một công việc (job) - không đùng đến một pin cụ thể nào đó mà chỉ thực hiện các tác vụ như in serial monitor hoăc đọc các cảm biến có nhiều chân 😊
     setup_wifi();
     // // auto ip = WiFi.localIP();
 
@@ -296,9 +300,43 @@ void setup()
     rfid->Setup();
     rfid->Setup_keypad(keypad);
     lcd->print("hello world");
+    pushsafer = new Pushsafer(PUSHSAFERKEY, espClient);
+
+
+    // char message[100];
+    // sprintf(message, "Fire detected! Be careful!");
+
+    // pushsafer->debug = true;
+
+    // struct PushSaferInput input;
+    // input.message = message;
+    // input.title = "URGENT: FIRE ALERT!";
+    // input.sound = "8";  // Loud sound
+    // input.vibration = "1";  // Vibration
+    // input.icon = "1";  // Icon for fire
+    // input.iconcolor = "#FF0000";  // Red color for danger
+    // input.priority = "1";  // High priority
+    // input.device = "a";  // Default device
+    // input.url = "https://www.pushsafer.com";
+    // input.urlTitle = "More Info";
+    // input.picture = "";
+    // input.picture2 = "";
+    // input.picture3 = "";
+    // input.time2live = "3600";  // The message lives for 1 hour
+    // input.retry = "2";  // Retry after 2 minutes
+    // input.expire = "86400";  // Expires after 1 day
+    // input.confirm = "1";  // Request confirmation
+    // input.answer = "I acknowledge the fire alert!";
+    // input.answeroptions = "Yes,No";
+    // input.answerforce = "Yes";  // Force user to answer
+
+    // // Send event and print the result
+    // String result = pushsafer->sendEvent(input);
+
+
     xTaskCreate(Task_Keypad, "Task_Keypad", 2048, NULL, 1, NULL);
-    xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 2048, NULL, 1, NULL);
-    xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 2048, NULL, 1, NULL);
+    xTaskCreate(Task_FlameSensor, "Task_FlameSensor", 10000, NULL, 1, NULL);
+    xTaskCreate(Task_VibrationSensor, "Task_VibrationSensor", 10000,NULL, 1, NULL);
     xTaskCreate(Task_Ultrasonic, "Task_Ultrasonic", 2048, NULL, 1, NULL);
     xTaskCreate(Task_RFID, "Task_RFID", 2048, NULL, 1, NULL);
 }
